@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Water Drop Glass — CYUSA Clever Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+<style>
+
+/* ══════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════ */
+:root {
+  --bg:           #080B14;
+  --blue:         #2D7DD2;
+  --blue-glow:    rgba(45,125,210,0.35);
+  --text:         #E8EDF5;
+  --text-dim:     rgba(232,237,245,0.55);
+  --text-muted:   rgba(232,237,245,0.30);
+
+  --r-card: 24px;
+  --r-pill: 999px;
+
+  /*
+    WATER DROP GLASS TOKENS
+    — Nearly colorless. Gains ALL color from the bg behind it.
+    — Think: a raindrop on a window. It doesn't add color, it refracts.
+  */
+  --wd-blur:      blur(2px) saturate(3) brightness(1.15) contrast(1.08);
+  --wd-tint:      rgba(255,255,255,0.04);
+  --wd-border:    rgba(255,255,255,0.22);
+  --wd-specular:  rgba(255,255,255,0.55);    /* bright white highlight — the water "shine" */
+  --wd-shadow:
+    0 8px 48px rgba(0,0,0,0.5),
+    0 0 0 0.5px rgba(255,255,255,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.35),    /* top inner rim — thick glass feel */
+    inset 0 -1px 0 rgba(255,255,255,0.08);
+  --wd-shadow-hover:
+    0 16px 64px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(255,255,255,0.22),
+    0 0 40px rgba(26,95,168,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    inset 0 -1px 0 rgba(255,255,255,0.1);
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body {
+  font-family:'Inter',-apple-system,sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ══════════════════════════════════
+   BACKGROUND — Original orb style
+   Fixed, rich colored blobs that the
+   water drop glass refracts through
+══════════════════════════════════ */
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+}
+/* These orbs are what give the colorless glass its color */
+.o1 { width:650px; height:650px; background:rgba(30,80,160,0.65);   top:-160px;    left:-160px;  }
+.o2 { width:520px; height:520px; background:rgba(15,60,90,0.70);    bottom:-110px; right:-110px; }
+.o3 { width:360px; height:360px; background:rgba(180,100,20,0.28);  top:38%;       left:56%;     }
+.o4 { width:300px; height:300px; background:rgba(20,100,80,0.38);   top:8%;        right:12%;    }
+.o5 { width:240px; height:240px; background:rgba(60,80,120,0.40);   bottom:22%;    left:18%;     }
+.o6 { width:200px; height:200px; background:rgba(10,50,80,0.50);    top:55%;       left:6%;      }
+
+/* ══════════════════════════════════
+   SVG WATER DROP FILTER
+   
+   The key difference from regular glass:
+   - Higher scale (90) = more aggressive refraction
+   - Lower blur stdDeviation (1) = sharper, more "lens" like
+   - turbulence not fractalNoise = stronger organic warp
+   - Animate is very slow/subtle = glass isn't moving, 
+     it just has natural water-lens distortion
+══════════════════════════════════ */
+
+/* ══════════════════════════════════
+   WATER DROP GLASS SYSTEM
+   
+   5 layers — each essential:
+   
+   .wd-filter   → The actual lens: backdrop-filter + SVG displacement
+                  Low blur + high refraction = water drop magnification
+   .wd-overlay  → Nearly transparent. Just barely visible tint.
+                  This is what makes it "colorless" — barely there.
+   .wd-specular → The bright white crescent on top.
+                  This is the #1 thing that makes it look like water.
+   .wd-rim      → Subtle bottom rim — gives thickness/depth.
+   .wd-content  → Your content.
+   
+   HTML structure:
+   <div class="wd [wd-card|wd-pill|wd-nav]">
+     <div class="wd-filter"></div>
+     <div class="wd-overlay"></div>
+     <div class="wd-specular"></div>
+     <div class="wd-rim"></div>
+     <div class="wd-content">...</div>
+   </div>
+══════════════════════════════════ */
+
+.wd {
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--wd-shadow);
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+  /* SVG displacement lives here — on the PARENT.
+     backdrop-filter on .wd-filter composites first,
+     then the parent filter warps the entire card output.
+     Putting both on the same element cancels them out. */
+}
+.wd:hover {
+  box-shadow: var(--wd-shadow-hover);
+  transform: translateY(-2px);
+}
+
+.wd-filter {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  backdrop-filter: blur(20px) saturate(1.8) brightness(1.08);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8) brightness(1.08);
+  z-index: 0;
+}
+
+/* Layer 2 — Nearly invisible tint
+   Just enough to give structure, NOT enough to add color */
+.wd-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--wd-tint);
+  border: 1px solid var(--wd-border);
+  z-index: 1;
+}
+
+/* Layer 3 — THE KEY: White crescent specular highlight
+   On a real water drop this is the bright white reflection
+   of the light source. This is what screams "WATER" to the eye.
+   Positioned top-left, fades fast — a crescent of pure white. */
+.wd-specular {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      ellipse 50% 22% at 25% 8%,
+      rgba(255,255,255,0.18) 0%,
+      rgba(255,255,255,0.06) 50%,
+      transparent 75%
+    );
+  z-index: 2;
+}
+
+/* Layer 4 — Rim / thickness
+   Subtle gradient on bottom — gives the glass a sense of depth */
+.wd-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(to bottom,
+      transparent 70%,
+      rgba(255,255,255,0.06) 100%
+    );
+  z-index: 3;
+}
+
+/* Layer 5 — Content */
+.wd-content {
+  position: relative;
+  z-index: 4;
+  color: var(--text);
+}
+
+/* Variants */
+.wd-card { border-radius: var(--r-card); }
+.wd-card .wd-content { padding: 24px; }
+
+.wd-pill { border-radius: var(--r-pill); }
+.wd-nav  { border-radius: var(--r-pill); }
+.wd-nav  .wd-content { padding: 8px 10px; display:flex; align-items:center; gap:4px; }
+
+/* ══════════════════════════════════
+   LAYOUT
+══════════════════════════════════ */
+.site { position:relative; z-index:1; }
+.wrap { max-width:1100px; margin:0 auto; padding:0 24px; }
+section { padding:80px 0; }
+
+/* ══════════════════════════════════
+   CUSTOM CURSOR
+══════════════════════════════════ */
+.cursor {
+  position:fixed; pointer-events:none; z-index:9999;
+  transform:translate(-50%,-50%);
+  transition: left 0.04s, top 0.04s;
+}
+.cursor-inner {
+  width:10px; height:10px; border-radius:50%;
+  background:rgba(255,255,255,0.9);
+  box-shadow: 0 0 12px rgba(147,210,255,0.8);
+}
+.cursor-outer {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  width:36px; height:36px; border-radius:50%;
+  border:1px solid rgba(255,255,255,0.3);
+  transition: width 0.2s, height 0.2s, opacity 0.2s;
+}
+
+/* ══════════════════════════════════
+   SCROLL PROGRESS
+══════════════════════════════════ */
+#prog {
+  position:fixed; top:0; left:0; height:2px;
+  background:linear-gradient(90deg,#4F8EF7,#8B5CF6);
+  box-shadow:0 0 8px rgba(79,142,247,0.6);
+  z-index:999; width:0%;
+}
+
+/* ══════════════════════════════════
+   NAVBAR
+══════════════════════════════════ */
+.nav-wrap {
+  position:fixed; top:20px; left:50%;
+  transform:translateX(-50%); z-index:100;
+}
+.nav-brand {
+  font-size:13px; font-weight:800; color:#fff;
+  padding:7px 14px 7px 10px;
+  border-right:1px solid rgba(255,255,255,0.15);
+  margin-right:4px; letter-spacing:-0.02em;
+}
+.nav-link {
+  padding:7px 14px; border-radius:var(--r-pill);
+  font-size:13px; font-weight:500;
+  color:rgba(255,255,255,0.58);
+  text-decoration:none; transition:all 0.2s; white-space:nowrap;
+}
+.nav-link:hover,.nav-link.on {
+  background:rgba(255,255,255,0.12); color:#fff;
+}
+
+/* ══════════════════════════════════
+   HERO
+══════════════════════════════════ */
+.hero {
+  min-height:100vh; display:flex; align-items:center; padding-top:100px;
+}
+.hero-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:48px; align-items:center;
+}
+.live-badge .wd-content {
+  padding:7px 16px; display:flex; align-items:center; gap:8px;
+  font-size:12px; font-weight:600; color:rgba(255,255,255,0.75);
+}
+.pdot {
+  width:7px;height:7px;border-radius:50%;background:#10b981;
+  animation:pdot 2.2s ease-in-out infinite;
+}
+@keyframes pdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.82)}}
+.hero-name {
+  font-size:clamp(44px,5.5vw,68px); font-weight:800;
+  letter-spacing:-0.03em; line-height:1.02; margin:20px 0 16px;
+}
+.hero-name em { font-style:normal; color:var(--blue); }
+.hero-sub {
+  font-size:17px; color:var(--text-dim); line-height:1.65;
+  margin-bottom:32px; max-width:420px;
+}
+.hero-btns { display:flex; gap:12px; flex-wrap:wrap; }
+.btn-solid {
+  padding:12px 24px; border-radius:var(--r-pill);
+  font-size:14px; font-weight:700;
+  background: #1a5fa8; color:#fff; border:none;
+  cursor:pointer; text-decoration:none;
+  display:inline-flex; align-items:center;
+  transition:all 0.2s;
+  box-shadow:0 4px 24px rgba(26,95,168,0.45);
+}
+.btn-solid:hover { background:#155090; transform:translateY(-1px); }
+.btn-wd .wd-content { padding:11px 22px; font-size:14px; font-weight:700; }
+.hero-card .wd-content { padding:28px; }
+.avatar {
+  width:68px; height:68px; border-radius:50%;
+  background:linear-gradient(135deg,#1a5fa8,#0f4060);
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; font-weight:800; margin-bottom:14px;
+  box-shadow:0 0 0 3px rgba(255,255,255,0.1), 0 0 28px rgba(79,142,247,0.3);
+}
+.stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:18px; }
+.stat .wd-content { padding:12px; text-align:center; }
+.sn { font-size:22px; font-weight:800; color:var(--blue); }
+.sl { font-size:10px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-muted); margin-top:2px; }
+
+/* ══════════════════════════════════
+   SECTION HEADERS
+══════════════════════════════════ */
+.slabel { font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:8px; }
+.stitle { font-size:clamp(30px,3.5vw,44px);font-weight:800;letter-spacing:-0.025em;margin-bottom:14px; }
+.ssub   { font-size:16px;color:var(--text-dim);max-width:500px; }
+
+/* ══════════════════════════════════
+   PROJECTS
+══════════════════════════════════ */
+.pgrid { display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;margin-top:48px; }
+.phead { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px; }
+.pname { font-size:17px;font-weight:700;letter-spacing:-0.01em; }
+.pclient { font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:2px; }
+.pdesc { font-size:13px;color:var(--text-dim);line-height:1.65;margin:12px 0; }
+.chips { display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px; }
+.chip {
+  padding:3px 8px; border-radius:6px;
+  font-size:10px;font-weight:700;letter-spacing:0.02em;
+  font-family:'JetBrains Mono',monospace;
+  background:rgba(79,142,247,0.13); color:#93C5FD;
+  border:0.5px solid rgba(79,142,247,0.26);
+}
+.badge {
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:var(--r-pill);
+  font-size:10px;font-weight:700;letter-spacing:0.04em; flex-shrink:0;
+}
+.bon  { background:rgba(16,185,129,0.13);color:#6EE7B7;border:0.5px solid rgba(16,185,129,0.28); }
+.bdn  { background:rgba(79,142,247,0.13);color:#93C5FD;border:0.5px solid rgba(79,142,247,0.28); }
+.bdot { width:5px;height:5px;border-radius:50%;background:currentColor; }
+.bon .bdot { animation:pdot 2s infinite; }
+.lnk { font-size:12px;font-weight:600;color:var(--blue);text-decoration:none;border-bottom:1px solid transparent;transition:border-color 0.2s; }
+.lnk:hover { border-bottom-color:var(--blue); }
+
+/* ══════════════════════════════════
+   DOCKS
+══════════════════════════════════ */
+.docks-g { display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px;align-items:start; }
+.docks-h { font-size:clamp(34px,4vw,54px);font-weight:800;letter-spacing:-0.03em;line-height:1.04;margin-bottom:16px; }
+.docks-h em { font-style:normal;color:var(--blue); }
+.docks-p { font-size:15px;color:var(--text-dim);line-height:1.7;margin-bottom:24px; }
+.products { display:flex;flex-direction:column;gap:10px; }
+.prod .wd-content { padding:16px 18px;display:flex;align-items:center;gap:14px; }
+.picon { width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0; }
+.pbl { background:rgba(59,130,246,0.18); }
+.ppu { background:rgba(139,92,246,0.18); }
+.pnm { font-size:14px;font-weight:700; }
+.pds { font-size:12px;color:var(--text-muted);margin-top:2px; }
+
+/* ══════════════════════════════════
+   TIMELINE
+══════════════════════════════════ */
+.tl { margin-top:48px;position:relative;padding-left:32px; }
+.tl::before { content:'';position:absolute;left:10px;top:10px;bottom:0;width:1px;background:linear-gradient(to bottom,var(--blue),transparent); }
+.tli { position:relative;margin-bottom:20px; }
+.tldot { position:absolute;left:-27px;top:22px;width:10px;height:10px;border-radius:50%;background:var(--blue);box-shadow:0 0 10px var(--blue-glow); }
+.tlc .wd-content { padding:16px 20px; }
+.tyear  { font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--blue);margin-bottom:3px; }
+.trole  { font-size:14px;font-weight:700; }
+.twhere { font-size:12px;color:var(--text-dim);margin-top:2px; }
+.tdet   { font-size:11px;color:var(--text-muted);margin-top:5px;font-style:italic; }
+
+/* ══════════════════════════════════
+   CONTACT
+══════════════════════════════════ */
+.contact-wrap { max-width:540px;margin:48px auto 0; }
+.ctitle { font-size:26px;font-weight:800;letter-spacing:-0.02em;margin-bottom:8px; }
+.csub   { font-size:14px;color:var(--text-dim);margin-bottom:28px;line-height:1.6; }
+.fg { margin-bottom:14px; }
+.fl { font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:5px;display:block;letter-spacing:0.04em;text-transform:uppercase; }
+.fi {
+  width:100%;padding:10px 14px;border-radius:12px;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+  color:#fff;font-size:14px;font-family:'Inter',sans-serif;outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+.fi:focus { border-color:rgba(26,95,168,0.45);box-shadow:0 0 0 3px rgba(79,142,247,0.1); }
+.fi::placeholder { color:rgba(255,255,255,0.2); }
+textarea.fi { resize:vertical;min-height:100px; }
+.frow { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+
+/* ══════════════════════════════════
+   FOOTER
+══════════════════════════════════ */
+footer { padding:28px 0;text-align:center;border-top:1px solid rgba(255,255,255,0.06);font-size:13px;color:var(--text-muted); }
+footer em { font-style:normal;color:var(--blue); }
+
+/* ══════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════ */
+@media(max-width:768px){
+  .hero-grid,.docks-g{grid-template-columns:1fr;}
+  .frow{grid-template-columns:1fr;}
+  .nav-wrap{width:calc(100% - 32px);}
+}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     SVG FILTERS — WATER DROP LENS EFFECT
+
+     The trick to making it look like a WATER DROP not glass:
+
+     Card filter (#waterdrop):
+     - scale="90" — aggressive refraction, like a thick water lens
+     - stdDeviation="0.8" — keep it sharp, water is clear not foggy
+     - type="turbulence" — stronger organic warp than fractalNoise
+     - Very slow <animate> — the water isn't moving, 
+       it just has the natural distortion of a thick water lens
+
+     Pill filter (#waterdrop-pill):
+     - scale="45" — less displacement for smaller elements
+     - stdDeviation="0.5" — even sharper for pills
+═══════════════════════════════════════════════════ -->
+
+
+<!-- Cursor -->
+<div class="cursor" id="cur">
+  <div class="cursor-inner"></div>
+  <div class="cursor-outer"></div>
+</div>
+
+<!-- Scroll progress -->
+<div id="prog"></div>
+
+<!-- Background orbs — these are the colors the water drop refracts -->
+<div class="bg">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+  <div class="orb o4"></div>
+  <div class="orb o5"></div>
+  <div class="orb o6"></div>
+</div>
+
+<!-- ══════════════════════════════
+     NAVBAR
+══════════════════════════════ -->
+<div class="nav-wrap">
+  <div class="wd wd-nav">
+    <div class="wd-filter"></div>
+    <div class="wd-overlay"></div>
+    <div class="wd-specular"></div>
+    <div class="wd-rim"></div>
+    <div class="wd-content">
+      <span class="nav-brand">CYUSA Clever</span>
+      <a href="#hero"     class="nav-link on">About</a>
+      <a href="#projects" class="nav-link">Projects</a>
+      <a href="#docks"    class="nav-link">DOCKS</a>
+      <a href="#contact"  class="nav-link">Contact</a>
+    </div>
+  </div>
+</div>
+
+<div class="site">
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <div class="wd wd-pill live-badge" style="display:inline-flex;margin-bottom:20px">
+            <div class="wd-filter"></div><div class="wd-overlay"></div>
+            <div class="wd-specular"></div><div class="wd-rim"></div>
+            <div class="wd-content"><div class="pdot"></div>Open to contracts · Kigali 🇷🇼</div>
+          </div>
+          <h1 class="hero-name">Hi, I'm<br/><em>CYUSA Clever</em></h1>
+          <p class="hero-sub">Software Developer & Tech Entrepreneur. Founder of DOCKS Corporation. Building automation solutions for Africa from Kigali, Rwanda.</p>
+          <div class="hero-btns">
+            <a href="#projects" class="btn-solid">View My Work</a>
+            <div class="wd wd-pill btn-wd" style="cursor:pointer">
+              <div class="wd-filter"></div><div class="wd-overlay"></div>
+              <div class="wd-specular"></div><div class="wd-rim"></div>
+              <div class="wd-content">Contact Me</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="wd wd-card hero-card">
+            <div class="wd-filter"></div><div class="wd-overlay"></div>
+            <div class="wd-specular"></div><div class="wd-rim"></div>
+            <div class="wd-content">
+              <div class="avatar">C</div>
+              <div style="font-size:17px;font-weight:700;letter-spacing:-0.01em">CYUSA Clever</div>
+              <div style="font-size:13px;color:var(--text-dim);margin-top:3px">L3 SOD · TVET Rwanda · DOCKS Corp Founder</div>
+              <div class="stats">
+                <div class="wd wd-card stat"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div><div class="wd-content"><div class="sn">6</div><div class="sl">Projects</div></div></div>
+                <div class="wd wd-card stat"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div><div class="wd-content"><div class="sn">2</div><div class="sl">Clients</div></div></div>
+                <div class="wd wd-card stat"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div><div class="wd-content"><div class="sn">4</div><div class="sl">Langs</div></div></div>
+                <div class="wd wd-card stat"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div><div class="wd-content"><div class="sn">1</div><div class="sl">Company</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="wrap">
+      <div class="slabel">Work</div>
+      <h2 class="stitle">Projects</h2>
+      <p class="ssub">Real products shipped — from enterprise platforms to automated enforcement systems.</p>
+      <div class="pgrid">
+
+        <div class="wd wd-card"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+          <div class="wd-content">
+            <div class="phead"><div><div class="pname">WasteWise</div><div class="pclient">AGRUNI Ltd — Contracted</div></div><div class="badge bon"><div class="bdot"></div>Ongoing</div></div>
+            <p class="pdesc">Multi-portal waste management platform with User, Admin & Worker dashboards. Multilingual (EN/FR/RW/SW).</p>
+            <div class="chips"><span class="chip">Vue 3</span><span class="chip">TypeScript</span><span class="chip">Pinia</span><span class="chip">vue-i18n</span><span class="chip">Vite</span></div>
+            <a href="#" class="lnk">GitHub →</a>
+          </div>
+        </div>
+
+        <div class="wd wd-card"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+          <div class="wd-content">
+            <div class="phead"><div><div class="pname">MotoLink Rwanda</div><div class="pclient">DOCKS Corporation</div></div><div class="badge bon"><div class="bdot"></div>Ongoing</div></div>
+            <p class="pdesc">Motorcycle taxi hailing platform for Kigali. Real-time ride matching, driver tracking, and MTN MoMo payments.</p>
+            <div class="chips"><span class="chip">Vue 3</span><span class="chip">Laravel</span><span class="chip">Mapbox</span><span class="chip">MTN MoMo</span></div>
+            <a href="#" class="lnk">GitHub →</a>
+          </div>
+        </div>
+
+        <div class="wd wd-card"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+          <div class="wd-content">
+            <div class="phead"><div><div class="pname">VIGILE Rwanda</div><div class="pclient">DOCKS · Rwanda National Police</div></div><div class="badge bon"><div class="bdot"></div>Ongoing</div></div>
+            <p class="pdesc">Automated road camera enforcement using ANPR/OCR. Detects violations, cross-references national vehicle database, processes fines via MTN MoMo.</p>
+            <div class="chips"><span class="chip">Laravel</span><span class="chip">OCR/ANPR</span><span class="chip">MTN MoMo</span><span class="chip">MySQL</span></div>
+            <span class="badge bdn">🔒 Private Repo</span>
+          </div>
+        </div>
+
+        <div class="wd wd-card"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+          <div class="wd-content">
+            <div class="phead"><div><div class="pname">Romantic Garden Gisozi</div><div class="pclient">Venue — Kigali</div></div><div class="badge bon"><div class="bdot"></div>Ongoing</div></div>
+            <p class="pdesc">Full-stack venue booking system with Liquid Glass design, multi-currency (RWF/USD/EUR/GBP), world clocks for diaspora, and admin panel.</p>
+            <div class="chips"><span class="chip">Laravel</span><span class="chip">PHP</span><span class="chip">MySQL</span><span class="chip">CSS Design System</span></div>
+            <a href="#" class="lnk">GitHub →</a>
+          </div>
+        </div>
+
+        <div class="wd wd-card"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+          <div class="wd-content">
+            <div class="phead"><div><div class="pname">OTG Bus Booking</div><div class="pclient">Client Project</div></div><div class="badge bon"><div class="bdot"></div>Ongoing</div></div>
+            <p class="pdesc">Bus booking app with interactive map-based route selection. Migrated from Leaflet to Mapbox for improved performance and UX.</p>
+            <div class="chips"><span class="chip">Vue 3</span><span class="chip">Vite</span><span class="chip">Mapbox GL</span></div>
+            <a href="#" class="lnk">GitHub →</a>
+          </div>
+        </div>
+
+        <div class="wd wd-card"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+          <div class="wd-content">
+            <div class="phead"><div><div class="pname">ChefBox</div><div class="pclient">L3 SOD — TVET Rwanda</div></div><div class="badge bdn"><div class="bdot"></div>Finished</div></div>
+            <p class="pdesc">Vue 3 recipe browsing app with live API integration, search with computed filtering, Vue Router navigation, and clean component architecture.</p>
+            <div class="chips"><span class="chip">Vue 3</span><span class="chip">Vue Router</span><span class="chip">Axios</span></div>
+            <a href="#" class="lnk">GitHub →</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- DOCKS -->
+  <section id="docks">
+    <div class="wrap">
+      <div class="slabel">Company</div>
+      <div class="docks-g">
+        <div>
+          <h2 class="docks-h"><em>DOCKS</em><br/>Corporation</h2>
+          <p class="docks-p">A tech company founded in Kigali, Rwanda, building automation solutions for African markets. We ship products that tackle real infrastructure problems — from transport to law enforcement — with modern software.</p>
+          <a href="#contact" class="btn-solid">Work with DOCKS</a>
+        </div>
+        <div class="products">
+          <div class="wd wd-card prod"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+            <div class="wd-content"><div class="picon pbl">🛵</div><div><div class="pnm">MotoLink Rwanda</div><div class="pds">Motorcycle taxi hailing · Kigali</div></div><div class="badge bon" style="margin-left:auto"><div class="bdot"></div>Live</div></div>
+          </div>
+          <div class="wd wd-card prod"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+            <div class="wd-content"><div class="picon ppu">📷</div><div><div class="pnm">VIGILE Rwanda</div><div class="pds">Road enforcement · Rwanda National Police</div></div><div class="badge bon" style="margin-left:auto"><div class="bdot"></div>Live</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section>
+    <div class="wrap">
+      <div class="slabel">History</div>
+      <h2 class="stitle">Experience</h2>
+      <div class="tl">
+        <div class="tli"><div class="tldot"></div>
+          <div class="wd wd-card tlc"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+            <div class="wd-content"><div class="tyear">2024 — Present</div><div class="trole">Frontend Developer (Contractor)</div><div class="twhere">AGRUNI Ltd</div><div class="tdet">Building WasteWise — multi-portal waste management platform</div></div>
+          </div>
+        </div>
+        <div class="tli"><div class="tldot"></div>
+          <div class="wd wd-card tlc"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+            <div class="wd-content"><div class="tyear">2024 — Present</div><div class="trole">Founder & Lead Developer</div><div class="twhere">DOCKS Corporation</div><div class="tdet">MotoLink Rwanda, VIGILE Rwanda</div></div>
+          </div>
+        </div>
+        <div class="tli"><div class="tldot"></div>
+          <div class="wd wd-card tlc"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+            <div class="wd-content"><div class="tyear">2024 — Present</div><div class="trole">L3 SOD Student</div><div class="twhere">TVET Rwanda</div><div class="tdet">Full-stack development & software engineering</div></div>
+          </div>
+        </div>
+        <div class="tli"><div class="tldot"></div>
+          <div class="wd wd-card tlc"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+            <div class="wd-content"><div class="tyear">Earlier</div><div class="trole">Developer</div><div class="twhere">Romantic Garden Gisozi, Kigali</div><div class="tdet">Venue management system with Liquid Glass design</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="wrap">
+      <div style="text-align:center"><div class="slabel">Say Hello</div><h2 class="stitle">Let's Build Something.</h2></div>
+      <div class="contact-wrap">
+        <div class="wd wd-card"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div>
+          <div class="wd-content" style="padding:36px">
+            <div class="ctitle">Get in Touch</div>
+            <p class="csub">Whether it's a product, a contract, or a collaboration — I'm open to conversations from Kigali and beyond.</p>
+            <div class="frow">
+              <div class="fg"><label class="fl">Name</label><input class="fi" type="text" placeholder="Your name"/></div>
+              <div class="fg"><label class="fl">Email</label><input class="fi" type="email" placeholder="your@email.com"/></div>
+            </div>
+            <div class="fg"><label class="fl">Subject</label><input class="fi" type="text" placeholder="What's this about?"/></div>
+            <div class="fg"><label class="fl">Message</label><textarea class="fi" placeholder="Tell me about your project..."></textarea></div>
+            <button class="btn-solid" style="width:100%;justify-content:center;margin-top:4px">Send Message</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Built by <em>CYUSA Clever</em> · DOCKS Corporation · 2025 · Kigali, Rwanda 🇷🇼</p>
+  </footer>
+</div>
+
+<script>
+// Scroll progress
+const prog = document.getElementById('prog');
+window.addEventListener('scroll', () => {
+  prog.style.width = (window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100) + '%';
+});
+
+// Custom cursor
+const cur = document.getElementById('cur');
+document.addEventListener('mousemove', e => {
+  cur.style.left = e.clientX + 'px';
+  cur.style.top  = e.clientY + 'px';
+});
+
+// Active nav
+const secs = document.querySelectorAll('section[id]');
+const navs = document.querySelectorAll('.nav-link');
+window.addEventListener('scroll', () => {
+  let c = '';
+  secs.forEach(s => { if (window.scrollY >= s.offsetTop - 130) c = s.id; });
+  navs.forEach(n => n.classList.toggle('on', n.getAttribute('href') === '#' + c));
+});
+</script>
+
+</body>
+</html>
