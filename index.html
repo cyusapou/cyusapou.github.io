@@ -3,8 +3,16 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CYUSA Clever - portfolio</title>
-<meta name="description" content="Personal portfolio of Cyusa Clever - developer, projects, and contact info">
+<title>CYUSA Clever - Portfolio</title>
+<meta name="description" content="Personal portfolio of CYUSA Clever — Software Developer, Tech Entrepreneur, and Founder of DOCKS Corporation. Based in Kigali, Rwanda.">
+<meta name="keywords" content="CYUSA Clever, DOCKS Corporation, software developer, Kigali, Rwanda, Vue, Laravel, portfolio">
+<meta name="author" content="CYUSA Clever">
+<meta property="og:title" content="CYUSA Clever — Portfolio">
+<meta property="og:description" content="Software Developer &amp; Founder of DOCKS Corporation, building automation solutions for Africa.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CYUSA Clever — Portfolio">
+<meta name="robots" content="index, follow">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
 <style>
 
@@ -399,12 +407,139 @@ footer { padding:28px 0;text-align:center;border-top:1px solid rgba(255,255,255,
 footer em { font-style:normal;color:var(--blue); }
 
 /* ══════════════════════════════════
-   RESPONSIVE
+   PORTRAIT PHOTO
 ══════════════════════════════════ */
-@media(max-width:768px){
-  .hero-grid,.docks-g{grid-template-columns:1fr;}
-  .frow{grid-template-columns:1fr;}
-  .nav-wrap{width:calc(100% - 32px);}
+.portrait-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  margin-left: auto;
+}
+.portrait-img {
+  width: 100%;
+  display: block;
+  border-radius: 20px;
+  object-fit: cover;
+  object-position: top center;
+  aspect-ratio: 3/4;
+  /* Black bg on photo blends into dark site bg */
+  mix-blend-mode: lighten;
+  filter: contrast(1.05) brightness(1.02);
+}
+/* Glass frame around the photo */
+.portrait-frame {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow:
+    0 0 0 0.5px rgba(255,255,255,0.08),
+    0 24px 64px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  pointer-events: none;
+}
+/* Name tag floating below photo */
+.portrait-tag {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.portrait-tag .wd-content {
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.85);
+}
+
+/* ══════════════════════════════════
+   MOBILE HAMBURGER NAV
+══════════════════════════════════ */
+.ham { display:none; flex-direction:column; gap:5px; cursor:pointer; padding:8px; }
+.ham span { width:22px; height:2px; background:#fff; border-radius:2px; transition:all 0.3s; display:block; }
+.mob-nav {
+  display:none; position:fixed; inset:0; z-index:99;
+  flex-direction:column; align-items:center; justify-content:center; gap:20px;
+  background:rgba(8,11,20,0.96); backdrop-filter:blur(20px);
+}
+.mob-nav.open { display:flex; }
+.mob-nav a {
+  font-size:28px; font-weight:800; letter-spacing:-0.02em;
+  color:rgba(255,255,255,0.7); text-decoration:none; transition:color 0.2s;
+}
+.mob-nav a:hover { color:#fff; }
+.mob-close {
+  position:absolute; top:24px; right:24px;
+  font-size:28px; color:rgba(255,255,255,0.5); cursor:pointer; background:none; border:none;
+}
+
+/* ══════════════════════════════════
+   RESPONSIVE — TABLET 768px
+══════════════════════════════════ */
+@media(max-width:900px){
+  .hero-grid { grid-template-columns:1fr; gap:32px; }
+  .portrait-wrap { max-width:280px; margin:0 auto; }
+  .docks-g { grid-template-columns:1fr; }
+  .frow { grid-template-columns:1fr; }
+}
+
+/* ══════════════════════════════════
+   RESPONSIVE — PHONE 480px
+══════════════════════════════════ */
+@media(max-width:480px){
+  body { cursor:auto; }
+  .cursor { display:none; }
+
+  /* Nav — show hamburger, hide desktop links */
+  .nav-wrap { width:calc(100% - 24px); top:12px; }
+  .wd-nav .wd-content { padding:8px 14px; }
+  .nav-brand { font-size:12px; padding:6px 10px 6px 8px; }
+  .nav-link   { display:none; }
+  .ham        { display:flex; }
+
+  /* Hero */
+  .hero { padding-top:80px; min-height:auto; padding-bottom:40px; }
+  .hero-name  { font-size:clamp(36px,10vw,52px); margin:14px 0 12px; }
+  .hero-sub   { font-size:15px; max-width:100%; }
+  .hero-btns  { gap:10px; }
+  .btn-solid  { padding:10px 20px; font-size:13px; }
+  .btn-wd .wd-content { padding:9px 18px; font-size:13px; }
+
+  /* Portrait */
+  .portrait-wrap { max-width:220px; margin:0 auto; }
+
+  /* Stats */
+  .stats { grid-template-columns:1fr 1fr; gap:6px; }
+  .stat .wd-content { padding:10px 6px; }
+  .sn { font-size:18px; }
+
+  /* Sections */
+  section { padding:56px 0; }
+  .wrap { padding:0 16px; }
+  .stitle { font-size:clamp(24px,7vw,34px); }
+
+  /* Projects */
+  .pgrid { grid-template-columns:1fr; gap:14px; margin-top:32px; }
+  .pname { font-size:15px; }
+
+  /* DOCKS */
+  .docks-h { font-size:clamp(28px,8vw,42px); }
+
+  /* Timeline */
+  .tl { padding-left:24px; }
+  .tldot { left:-20px; }
+  .trole { font-size:13px; }
+
+  /* Contact form */
+  .contact-wrap { margin-top:32px; }
+  .wd-content[style*="padding:36px"] { padding:24px !important; }
+  .ctitle { font-size:22px; }
+
+  /* Footer */
+  footer { font-size:12px; padding:20px 16px; }
 }
 
 </style>
@@ -463,8 +598,20 @@ footer em { font-style:normal;color:var(--blue); }
       <a href="#projects" class="nav-link">Projects</a>
       <a href="#docks"    class="nav-link">DOCKS</a>
       <a href="#contact"  class="nav-link">Contact</a>
+      <div class="ham" id="ham" onclick="document.getElementById('mobnav').classList.add('open')">
+        <span></span><span></span><span></span>
+      </div>
     </div>
   </div>
+</div>
+
+<!-- Mobile nav overlay -->
+<div class="mob-nav" id="mobnav">
+  <button class="mob-close" onclick="document.getElementById('mobnav').classList.remove('open')">✕</button>
+  <a href="#hero"     onclick="document.getElementById('mobnav').classList.remove('open')">About</a>
+  <a href="#projects" onclick="document.getElementById('mobnav').classList.remove('open')">Projects</a>
+  <a href="#docks"    onclick="document.getElementById('mobnav').classList.remove('open')">DOCKS</a>
+  <a href="#contact"  onclick="document.getElementById('mobnav').classList.remove('open')">Contact</a>
 </div>
 
 <div class="site">
@@ -491,20 +638,15 @@ footer em { font-style:normal;color:var(--blue); }
           </div>
         </div>
 
+        <!-- Portrait photo -->
         <div>
-          <div class="wd wd-card hero-card">
-            <div class="wd-filter"></div><div class="wd-overlay"></div>
-            <div class="wd-specular"></div><div class="wd-rim"></div>
-            <div class="wd-content">
-              <div class="avatar">C</div>
-              <div style="font-size:17px;font-weight:700;letter-spacing:-0.01em">CYUSA Clever</div>
-              <div style="font-size:13px;color:var(--text-dim);margin-top:3px">L3 SOD · TVET Rwanda · DOCKS Corp Founder</div>
-              <div class="stats">
-                <div class="wd wd-card stat"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div><div class="wd-content"><div class="sn">6</div><div class="sl">Projects</div></div></div>
-                <div class="wd wd-card stat"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div><div class="wd-content"><div class="sn">2</div><div class="sl">Clients</div></div></div>
-                <div class="wd wd-card stat"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div><div class="wd-content"><div class="sn">4</div><div class="sl">Langs</div></div></div>
-                <div class="wd wd-card stat"><div class="wd-filter"></div><div class="wd-overlay"></div><div class="wd-specular"></div><div class="wd-rim"></div><div class="wd-content"><div class="sn">1</div><div class="sl">Company</div></div></div>
-              </div>
+          <div class="portrait-wrap">
+            <img src="./cyusa-clever.png" alt="CYUSA Clever" class="portrait-img"/>
+            <div class="portrait-frame"></div>
+            <div class="wd wd-pill portrait-tag">
+              <div class="wd-filter"></div><div class="wd-overlay"></div>
+              <div class="wd-specular"></div><div class="wd-rim"></div>
+              <div class="wd-content">CYUSA Clever · Kigali 🇷🇼</div>
             </div>
           </div>
         </div>
@@ -679,14 +821,6 @@ window.addEventListener('scroll', () => {
   secs.forEach(s => { if (window.scrollY >= s.offsetTop - 130) c = s.id; });
   navs.forEach(n => n.classList.toggle('on', n.getAttribute('href') === '#' + c));
 });
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Person",
-  "name": "Cyusa Clever",
-  "url": "https://cyusaclever.me"
-}
 </script>
 
 </body>
